@@ -57,6 +57,9 @@ src/
 ## الأوامر
 
 ```bash
+# معالج التثبيت السريع (يفحص المتطلبات، يجهّز .env، يثبّت، يشغّل)
+pnpm bootstrap
+
 # تثبيت الاعتماديات
 pnpm install
 
@@ -68,11 +71,16 @@ pnpm build
 
 # معاينة البناء
 pnpm preview
+
+# النشر على Firebase Hosting
+pnpm deploy
 ```
+
+> **معالج الإعداد الأولي (Setup Wizard):** يظهر تلقائياً عند تشغيل التطبيق في متصفحك إذا كانت إعدادات الاتصال بقاعدة البيانات غير مكتملة، ليمكّنك من تعبئة القيم وتوليد `firebaseConfig.ts` وملف `.env`.
 
 ## متغيرات البيئة
 
-يتم قراءة إعدادات Firebase من متغيرات `VITE_FIREBASE_*` عبر `import.meta.env`. انسخ `.env.example` إلى `.env` وعبّئ القيم.
+يتم قراءة إعدادات Firebase من متغيرات `VITE_FIREBASE_*` عبر `import.meta.env`. انسخ `.env.example` إلى `.env` وعبّئ القيم، أو زرعها مباشرةً في `src/config/firebaseConfig.ts`.
 
 | المتغير | الوصف |
 |---------|--------|
@@ -83,6 +91,8 @@ pnpm preview
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | معرف المرسل |
 | `VITE_FIREBASE_APP_ID` | معرف التطبيق |
 | `VITE_FIREBASE_MEASUREMENT_ID` | معرف القياس |
+| `VITE_FIREBASE_APP_PATH` | مسار البيانات داخل Firestore (اختياري) |
+| `VITE_GEMINI_API_KEY` | مفتاح Gemini AI (اختياري) |
 
 ## النشر على Firebase Hosting
 
@@ -102,6 +112,16 @@ npx firebase deploy --only hosting
 ```
 
 المشروع المربوط: `lyalina-ads`
+
+## النشر عبر Docker
+
+```bash
+# يشغّل Nginx بمنفذ 8080 بعد بناء Node → Nginx
+docker compose up -d --build
+# أو يدوياً:
+docker build --build-arg VITE_FIREBASE_PROJECT_ID=my-project -t lyalina-ads-manager .
+docker run -p 8080:80 lyalina-ads-manager
+```
 
 ## المسارات (Routes)
 

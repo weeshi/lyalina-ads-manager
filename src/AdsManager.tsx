@@ -14,6 +14,7 @@ import { doc, setDoc, getDocs, collection, query, onSnapshot, deleteDoc, serverT
 
 // --- Internal imports ---
 import { app, auth, db, appId } from './firebase';
+import { geminiApiKey } from './config/firebaseConfig';
 import { HEADERS, AI_HEADERS, STATUS_OPTIONS, CAMPAIGN_TYPES, SEX_OPTIONS, PRESET_WORKSPACES, DEFAULT_WORKSPACE, PACKAGE_CATEGORIES, PAYMENT_METHODS } from './constants';
 import { generateId, safeRender, parseCurrency, calculateProgress } from './utils';
 import useAuth from './hooks/useAuth';
@@ -468,7 +469,7 @@ const App = () => {
   }, [sortedAndFilteredData, data, currentUser, setData, saveCampaign, deleteDocByType, setConfirmModal, selectedCustomer, selectedMarketer, setSelectedCustomer, setCurrentView, setSelectedMarketer]);
 
   // --- Smart Input / AI ---
-  const apiKey = "REMOVED_GEMINI_KEY";
+  const apiKey = geminiApiKey;
   const AI_MODEL = "gemini-3.5-flash";
 
   const callGemini = useCallback(async (parts, systemInstruction, generationConfig, contents) => {
