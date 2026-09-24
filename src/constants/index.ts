@@ -22,6 +22,11 @@ export const PACKAGE_CATEGORIES = {
   R: { label: 'عقارات', icon: '🏠' },
   G: { label: 'متنوعة', icon: '📦' },
 };
+export const ROLE_OPTIONS = [
+  { value: 'sales', label: 'موظف مبيعات (Sales)', shortLabel: 'مبيعات' },
+  { value: 'marketer', label: 'مسوق (Marketer)', shortLabel: 'مسوق' },
+  { value: 'admin', label: 'مدير فرعي (Admin)', shortLabel: 'مدير' },
+];
 
 const BASE_PACKAGES = [
   { days: 7, priceUSD: 50, priceLYD: 360 },

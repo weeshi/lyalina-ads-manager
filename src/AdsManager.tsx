@@ -55,6 +55,7 @@ const App = () => {
   // --- Auth ---
   const {
     user, currentUser, isSuperAdmin, isAuthReady, googleAccessToken, setGoogleAccessToken, globalAuthError, handleLogout: authLogout,
+    linkGoogleAccount, refreshGoogleToken, isLinkingGoogle,
   } = useAuth();
 
   // --- Persistent State (must be before useData) ---
@@ -1045,11 +1046,31 @@ const App = () => {
 
   const handleDriveBackup = useCallback(async () => {
     if (!googleAccessToken) {
-      setConfirmModal({ show: true, type: "error", message: "يرجى تسجيل الدخول بواسطة حساب Google لتفعيل النسخ الاحتياطي المباشر للدرايف." });
+      setConfirmModal({ show: true, type: "error", message: "لا يوجد ربط مع حساب جوجل. يرجى ربط حساب جوجل من إعدادات الحساب أولاً." });
       return;
     }
-    setProgressModal({ show: true, title: "جاري الرفع إلى Google Drive...", current: 0, total: 9, percentage: 0 });
-    try {
+    
+    const attemptBackup = async (token) => {
+      setProgressModal({ show: true, title: "جاري التحقق من الصلاحيات...", current: 0, total: 9, percentage: 0 });
+      
+      // فحص الصلاحيات أولاً
+      try {
+        const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+        const tokenData = await tokenInfo.json();
+        console.log("Token scopes:", tokenData.scope);
+        console.log("Token email:", tokenData.email);
+        console.log("Full token info:", tokenData);
+        if (!tokenData.scope || !tokenData.scope.includes('drive.file')) {
+          throw new Error(`التوكن لا يحتوي على صلاحية drive.file. الصلاحيات الحالية: ${tokenData.scope || 'لا توجد صلاحيات'}`);
+        }
+      } catch (e) {
+        console.error("Token check error:", e);
+        if (e.message && e.message.includes('drive.file')) {
+          throw e;
+        }
+      }
+
+      setProgressModal({ show: true, title: "جاري الرفع إلى Google Drive...", current: 0, total: 9, percentage: 0 });
       const fetchAll = async (colName) => {
         const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', colName));
         return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => isSuperAdmin || item.ownerId === currentUser.uid);
@@ -1072,22 +1093,70 @@ const App = () => {
       const metadata = { name: fileName, mimeType: 'application/json' };
       const multipartRequestBody = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: application/json\r\n\r\n' + JSON.stringify(fullBackup, null, 2) + close_delim;
       const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST', headers: { 'Authorization': `Bearer ${googleAccessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipartRequestBody,
+        method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipartRequestBody,
       });
-      if (!response.ok) throw new Error("فشل الرفع السحابي. التوكن قد يكون منتهي الصلاحية.");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Drive API error:", response.status, errorText);
+        if (response.status === 401) {
+          throw new Error("TOKEN_EXPIRED");
+        }
+        if (response.status === 403) {
+          let detail = "";
+          try {
+            const errorJson = JSON.parse(errorText);
+            detail = errorJson.error?.message || errorText;
+            if (errorJson.error?.errors) {
+              detail += " | " + errorJson.error.errors.map(e => e.reason).join(", ");
+            }
+          } catch(e) {
+            detail = errorText;
+          }
+          console.error("403 Full error:", detail);
+          throw new Error(`403: ${detail}`);
+        }
+        throw new Error(`فشل الرفع السحابي: ${response.status} - ${errorText}`);
+      }
       const nowStr = new Date().toLocaleString('en-GB');
       setLastBackupDate(nowStr);
       localStorage.setItem('ads_last_backup', nowStr);
       addLog("تم رفع النسخة لجوجل درايف بنجاح", "success");
       setProgressModal({ show: false, title: "", current: 0, total: 0, percentage: 0 });
       setConfirmModal({ show: true, type: "success", message: `تم حفظ نسخة احتياطية سحابية باسم (${fileName}) في حساب Google Drive الخاص بك بنجاح.` });
+    };
+
+    try {
+      await attemptBackup(googleAccessToken);
     } catch (err) {
+      if (err.message === "TOKEN_EXPIRED" && refreshGoogleToken) {
+        setProgressModal(p => ({ ...p, title: "انتهت صلاحية التوكن، جاري تحديثه...", percentage: 10 }));
+        const refreshResult = await refreshGoogleToken();
+        if (refreshResult.success) {
+          try {
+            await attemptBackup(refreshResult.success && googleAccessToken);
+          } catch (retryErr) {
+            console.error("Retry failed:", retryErr);
+            setProgressModal({ show: false, title: "", current: 0, total: 0, percentage: 0 });
+            setConfirmModal({ show: true, type: "error", message: "فشل تحديث صلاحية جوجل درايف. يرجى إعادة ربط الحساب من الإعدادات." });
+            addLog("فشل الرفع إلى جوجل درايف بعد محاولة تحديث التوكن", "error");
+          }
+          return;
+        }
+      }
       console.error(err);
       setProgressModal({ show: false, title: "", current: 0, total: 0, percentage: 0 });
-      setConfirmModal({ show: true, type: "error", message: "تعذر الرفع إلى جوجل درايف. قم بتسجيل الخروج والدخول مجدداً لتجديد صلاحية الاتصال." });
+      let errorMsg = "تعذر الرفع إلى جوجل درايف";
+      if (err.message && err.message.includes('403')) {
+        errorMsg = "خطأ 403: صلاحية Google Drive API غير مفعلة. يرجى تفعيل Google Drive API في Google Cloud Console وإضافة نطاق drive.file";
+      } else if (err.message === "TOKEN_EXPIRED") {
+        errorMsg = "انتهت صلاحية اتصال جوجل درايف. يرجى تحديث الصلاحية من إعدادات الحساب.";
+      } else if (err.message) {
+        errorMsg = `تعذر الرفع إلى جوجل درايف: ${err.message}`;
+      }
+      setConfirmModal({ show: true, type: "error", message: errorMsg });
       addLog("فشل الرفع إلى جوجل درايف", "error");
     }
-  }, [googleAccessToken, setConfirmModal, setProgressModal, isSuperAdmin, currentUser, appId, db, getDocs, collection, setLastBackupDate, addLog]);
+  }, [googleAccessToken, setConfirmModal, setProgressModal, isSuperAdmin, currentUser, appId, db, getDocs, collection, setLastBackupDate, addLog, refreshGoogleToken]);
 
   const handleRestoreAll = useCallback((e) => {
     const file = e.target.files[0];
@@ -1247,6 +1316,9 @@ const App = () => {
               handleDriveBackup={handleDriveBackup} googleAccessToken={googleAccessToken}
               restoreInputRef={restoreInputRef} lastBackupDate={lastBackupDate}
               setConfirmModal={setConfirmModal}
+              linkGoogleAccount={linkGoogleAccount}
+              refreshGoogleToken={refreshGoogleToken}
+              isLinkingGoogle={isLinkingGoogle}
             />
           )}
 

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { Settings, UserCircle, LogOut, Coins, Layers, Database, Download, HardDrive, Upload, Cloud, ChevronDown, Loader2, Plus, ShieldAlert } from 'lucide-react';
-import { memo } from 'react';
+import { Settings, UserCircle, LogOut, Coins, Layers, Database, Download, HardDrive, Upload, Cloud, ChevronDown, Loader2, Plus, ShieldAlert, Link, Unlink, CheckCircle2 } from 'lucide-react';
+import { memo, useState } from 'react';
 import { safeRender } from '../../utils';
 
 const SettingsView = ({
@@ -8,7 +8,9 @@ const SettingsView = ({
   globalExchangeRate, setGlobalExchangeRate, tempWorkspaceId, setTempWorkspaceId,
   setWorkspaceHistory, addLog, handleLogout, handleBackupAll, handleBackupCurrentWorkspace,
   handleDriveBackup, googleAccessToken, restoreInputRef, lastBackupDate, setConfirmModal,
+  linkGoogleAccount, refreshGoogleToken, isLinkingGoogle,
 }) => {
+  const [linkMessage, setLinkMessage] = useState({ text: '', type: '' });
   return (
     <div className="flex-1 bg-slate-50 p-6 overflow-auto">
       <div className="max-w-4xl mx-auto pb-20">
@@ -28,12 +30,72 @@ const SettingsView = ({
                 <p className="text-xs text-slate-500 font-mono">{currentUser?.email || currentUser?.uid}</p>
               </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button onClick={() => setConfirmModal({show: true, message: "هل أنت متأكد من تسجيل الخروج؟", action: () => handleLogout()})} className="flex-1 sm:flex-none px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-colors">
                 <LogOut size={16}/> تسجيل خروج
               </button>
+              {/* Google Account Linking */}
+              <div className="flex items-center gap-2">
+                {googleAccessToken ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <span className="text-xs font-bold text-emerald-700">مرتبط بجوجل</span>
+                    <button
+                      onClick={async () => {
+                        setLinkMessage({ text: 'جاري تحديث الصلاحية...', type: 'loading' });
+                        const result = await refreshGoogleToken();
+                        setLinkMessage({ text: result.success ? 'تم تحديث صلاحية جوجل درايف بنجاح!' : result.error, type: result.success ? 'success' : 'error' });
+                      }}
+                      disabled={isLinkingGoogle}
+                      className="ml-2 px-3 py-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                      title="تحديث صلاحية جوجل درايف"
+                    >
+                      {isLinkingGoogle ? <Loader2 size={12} className="inline-block align-middle ml-1 animate-spin" /> : <Loader2 size={12} className="inline-block align-middle ml-1" />} تحديث
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      setLinkMessage({ text: 'جاري الربط...', type: 'loading' });
+                      const result = await linkGoogleAccount();
+                      setLinkMessage({ text: result.success ? 'تم ربط حساب جوجل بنجاح! يمكنك الآن استخدام النسخ الاحتياطي السحابي.' : result.error, type: result.success ? 'success' : 'error' });
+                    }}
+                    disabled={isLinkingGoogle}
+                    className="flex-1 sm:flex-none px-4 py-2 bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Link size={16} /> {isLinkingGoogle ? 'جاري الربط...' : 'ربط حساب جوجل'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
+          
+          {linkMessage.text && linkMessage.type === 'loading' && (
+            <div className="mt-4 p-3 rounded-xl text-sm font-bold bg-blue-50 text-blue-700 border border-blue-100 flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" /> {linkMessage.text}
+            </div>
+          )}
+          {linkMessage.text && linkMessage.type === 'error' && (
+            <div className="mt-4 p-3 rounded-xl text-sm font-bold bg-red-50 text-red-700 border border-red-100">
+              {linkMessage.text}
+              {linkMessage.text.includes('403') && (
+                <div className="mt-2 text-[11px] text-red-600 font-normal">
+                  <p className="font-bold">خطوات الإصلاح:</p>
+                  <ol className="list-decimal list-inside mt-1 space-y-1">
+                    <li>اذهب إلى <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" className="underline">Google Cloud Console</a></li>
+                    <li>فعّل Google Drive API</li>
+                    <li>اذهب إلى OAuth consent screen وأضف نطاق (scope): https://www.googleapis.com/auth/drive.file</li>
+                    <li>تأكد من أن المستخدمين قد وافقوا على الصلاحيات</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+          )}
+          {linkMessage.text && linkMessage.type === 'success' && (
+            <div className="mt-4 p-3 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+              {linkMessage.text}
+            </div>
+          )}
         </div>
 
         {/* Financial Settings */}
