@@ -44,12 +44,6 @@ const DEFAULT_MEASUREMENT_ID = 'G-JCSN80R0S0';
  */
 const DEFAULT_APP_PATH = 'lyalina-ads-production';
 
-/**
- * مفتاح Gemini AI (للذكاء الاصطناعي داخل النظام).
- * يُقرأ من `.env` عبر `VITE_GEMINI_API_KEY` أو يقع على القيمة المزروعة.
- */
-const DEFAULT_GEMINI_API_KEY = 'PASTE_YOUR_GEMINI_API_KEY';
-
 // ═══════════ أولوية القراءة: .env ثم القيم المزروعة ═══════════
 
 function pick(envValue, defaultValue) {
@@ -75,8 +69,3 @@ export const firebaseConfig = {
  * `VITE_FIREBASE_APP_PATH` أو يقع على القيمة المزروعة أعلاه.
  */
 export const appId = pick(N('VITE_FIREBASE_APP_PATH'), DEFAULT_APP_PATH);
-
-/**
- * مفتاح Gemini AI المستخدم داخل النظام (للذكاء الاصطناعي).
- */
-export const geminiApiKey = pick(N('VITE_GEMINI_API_KEY'), DEFAULT_GEMINI_API_KEY);

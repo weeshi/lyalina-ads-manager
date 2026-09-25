@@ -46,7 +46,7 @@ src/
 7. **التصميم**: Tailwind CSS utility classes فقط - لا ملفات `.css` إضافية
 8. **البناء**: `pnpm dev` للتطوير، `pnpm build` للإنتاج
 9. **التسمية**: `id` و `data-component` للعناصر المهمة
-10. **الأمان**: مفتاح Gemini API في AdsManager.tsx (const apiKey)
+10. **الأمان**: أي مفتاح API أو سر حساس (Gemini، إلخ) يُخزَّن حصراً عبر Secrets بجانب السيرفر (Cloudflare Workers / Firebase Functions)، ولا يُكتب بأي ملف بالفرونت إند تحت أي ظرف
 11. **النسخ الاحتياطية**: لا تعديل أبدا على النسخ الاحتياطية الموجودة مسبقا (طوق نجاة للطوارئ). عند أي تحديث أنشئ نسخة جديدة باسم/تاريخ مختلف بدلا من تعديل القديمة.
 
 ## سير العمل
@@ -54,5 +54,4 @@ src/
 1. تشغيل `pnpm dev` في `D:\ERP-Projects\lyalina`
 2. التحقق من `pnpm build` قبل أي commit
 3. Firebase Console: https://console.firebase.google.com/project/lyalina-ads
-4. Gemini API: https://aistudio.google.com/app/apikey
-12. **النسخ الاحتياطية**: لا تعديل أبدا على النسخ الاحتياطية الموجودة مسبقا (طوق نجاة للطوارئ). عند أي تحديث أنشئ نسخة جديدة باسم/تاريخ مختلف بدلا من تعديل القديمة.
+4. نَشر الـ Worker: في `D:\ERP-Projects\lyalina-gemini-proxy` → `npx wrangler secret put GEMINI_API_KEY` ثم `npx wrangler deploy` (تعيين `VITE_GEMINI_PROXY_URL` بالفرونت إند بعد النشر)

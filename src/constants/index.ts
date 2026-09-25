@@ -1,4 +1,5 @@
 // @ts-nocheck
+export const GEMINI_PROXY_URL = (import.meta.env.VITE_GEMINI_PROXY_URL || '').trim() || 'http://localhost:8787';
 export const PRESET_WORKSPACES = ["Weeshi Ads 2", "Weeshi Ads 3", "Weeshi Ad 3", "weeshi Ads 4", "Weeshi Ads 5", "Boost Ads", "Cars Ads", "Mutasem Ads", "Real Estate Ads", "main-ads-db"];
 export const DEFAULT_WORKSPACE = "Weeshi Ads 2";
 export const HEADERS = ["الحالة", "اسم الصفحة", "الرابط", "كود الباقة", "الدفع", "القيمة", "القيمة (د.ل)", "التاريخ", "المدة", "المكان", "الاعمار", "الجنس", "الاهتمامات", "نوع الحملة", "اسم Ad", "كود المنشور", "المعرف"];

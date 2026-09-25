@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { z } from 'zod';
-import { firebaseConfig, appId, geminiApiKey } from './firebaseConfig';
+import { firebaseConfig, appId } from './firebaseConfig';
 
 /**
  * مخطط (Schema) التحقق من إعدادات الاتصال بقاعدة البيانات (Firebase).
@@ -93,11 +93,6 @@ export function validateConfig(): ValidationResult {
     if (!isPlaceholder(item.value) && !hasEnvValue(item.env)) {
       warnings.push(`المفتاح الحساس "${key}" مكتوب مباشرةً في config وسيُرفع مع الكود — يفضّل وضعه في .env (${item.env}).`);
     }
-  }
-
-  // تحذير خاص بمفتاح Gemini إن كان placeholder
-  if (isPlaceholder(geminiApiKey)) {
-    warnings.push('مفتاح Gemini AI لم يُعبَّأ (stays placeholder) — ستعمل إدارة البيانات لكن سيتعطل توليد النصوص الذكية.');
   }
 
   return {

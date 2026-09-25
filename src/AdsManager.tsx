@@ -14,8 +14,7 @@ import { doc, setDoc, getDocs, collection, query, onSnapshot, deleteDoc, serverT
 
 // --- Internal imports ---
 import { app, auth, db, appId } from './firebase';
-import { geminiApiKey } from './config/firebaseConfig';
-import { HEADERS, AI_HEADERS, STATUS_OPTIONS, CAMPAIGN_TYPES, SEX_OPTIONS, PRESET_WORKSPACES, DEFAULT_WORKSPACE, PACKAGE_CATEGORIES, PAYMENT_METHODS } from './constants';
+import { HEADERS, AI_HEADERS, STATUS_OPTIONS, CAMPAIGN_TYPES, SEX_OPTIONS, PRESET_WORKSPACES, DEFAULT_WORKSPACE, PACKAGE_CATEGORIES, PAYMENT_METHODS, GEMINI_PROXY_URL } from './constants';
 import { generateId, safeRender, parseCurrency, calculateProgress } from './utils';
 import useAuth from './hooks/useAuth';
 import useData from './hooks/useData';
@@ -470,8 +469,7 @@ const App = () => {
   }, [sortedAndFilteredData, data, currentUser, setData, saveCampaign, deleteDocByType, setConfirmModal, selectedCustomer, selectedMarketer, setSelectedCustomer, setCurrentView, setSelectedMarketer]);
 
   // --- Smart Input / AI ---
-  const apiKey = geminiApiKey;
-  const AI_MODEL = "gemini-3.5-flash";
+  const AI_MODEL = "gemini-flash-latest";
 
   const callGemini = useCallback(async (parts, systemInstruction, generationConfig, contents) => {
     const body = {
@@ -479,14 +477,16 @@ const App = () => {
       ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
       ...(generationConfig || {}),
     };
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${apiKey}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error("غير مسجل الدخول");
+    const res = await fetch(GEMINI_PROXY_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  }, [apiKey, AI_MODEL]);
+  }, [AI_MODEL]);
 
   const handleAskAi = useCallback(async (overridePrompt) => {
     const promptToUse = typeof overridePrompt === 'string' ? overridePrompt : aiChatPrompt;

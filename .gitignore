@@ -26,5 +26,12 @@ pnpm-debug.log*
 .firebase/
 *-debug.log
 
+# Backups & archives
+Backup/
+*.zip
+
+# Secrets & OAuth client files
+Docs/
+
 # TypeScript build info
 *.tsbuildinfo

@@ -21,7 +21,6 @@ const SetupWizard = ({ onComplete }) => {
         appId: '',
         measurementId: '',
         appPath: 'lyalina-ads-production',
-        geminiApiKey: '',
     });
     const [tab, setTab] = useState('env');
     const [copied, setCopied] = useState('');
@@ -40,7 +39,6 @@ const SetupWizard = ({ onComplete }) => {
             `VITE_FIREBASE_APP_ID=${v('appId')}`,
             `VITE_FIREBASE_MEASUREMENT_ID=${v('measurementId')}`,
             `VITE_FIREBASE_APP_PATH=${v('appPath', 'lyalina-ads-production')}`,
-            `VITE_GEMINI_API_KEY=${v('geminiApiKey')}`,
             '',
         ].join('\n');
     };
@@ -61,7 +59,6 @@ const SetupWizard = ({ onComplete }) => {
             `  measurementId: ${js('measurementId', 'YOUR_MEASUREMENT_ID')},`,
             '};',
             `export const appId = ${JSON.stringify(form.appPath?.trim() || 'lyalina-ads-production')};`,
-            `export const geminiApiKey = ${js('geminiApiKey', 'PASTE_YOUR_GEMINI_API_KEY')};`,
             '',
         ].join('\n');
     };
@@ -127,11 +124,6 @@ const SetupWizard = ({ onComplete }) => {
                     <Field label="معرّف التطبيق (appId)" value={form.appId} onChange={set('appId')} placeholder="1:xxx:web:yyy" ltr />
                     <Field label="معرّف القياس (measurementId) - اختياري" value={form.measurementId} onChange={set('measurementId')} placeholder="G-XXXXXXX" ltr />
                     <Field label="مسار البيانات (appPath)" value={form.appPath} onChange={set('appPath')} placeholder="lyalina-ads-production" ltr />
-                </div>
-                <div className="mb-3">
-                    <label className="block text-xs font-bold text-slate-600 mb-1">مفتاح Gemini AI (اختياري - للذكاء الاصطناعي)</label>
-                    <input type="text" value={form.geminiApiKey} onChange={set('geminiApiKey')} placeholder="AIza..." dir="ltr"
-                        className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none font-bold text-sm text-slate-800 transition-all" />
                 </div>
 
                 {/* المخرجات */}
