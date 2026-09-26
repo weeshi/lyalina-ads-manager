@@ -55,3 +55,10 @@ src/
 2. التحقق من `pnpm build` قبل أي commit
 3. Firebase Console: https://console.firebase.google.com/project/lyalina-ads
 4. نَشر الـ Worker: في `D:\ERP-Projects\lyalina-gemini-proxy` → `npx wrangler secret put GEMINI_API_KEY` ثم `npx wrangler deploy` (تعيين `VITE_GEMINI_PROXY_URL` بالفرونت إند بعد النشر)
+
+## مشروع الـ Proxy المنفصل
+
+- **المسار**: `D:\ERP-Projects\lyalina-gemini-proxy` (ريبو GitHub مستقل: `weeshi/lyalina-gemini-proxy`)
+- **الغرض**: وسيط Cloudflare Worker يخفي مفتاح Gemini عن الفرونت — لا يُكتب أي مفتاح في الفرونت أبداً
+- **دستوره الخاص**: `D:\ERP-Projects\lyalina-gemini-proxy\AGENTS.md` (انظر إليه قبل تعديل الـ Worker)
+- **التشغيل المحلي**: `npx wrangler dev --port 8787` (الفرونت يوجه إلى `localhost:8787` عبر `.env.local`)
