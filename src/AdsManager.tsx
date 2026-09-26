@@ -484,7 +484,7 @@ const App = () => {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : (data?.error?.message || `HTTP ${res.status}`));
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   }, [AI_MODEL]);
 
